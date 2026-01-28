@@ -2,3 +2,8 @@ streamlit
 pypdf
 fastapi
 uvicorn 
+pypdf
+langchain
+langchain-text-splitters
+langchain_community
+python-multipart
