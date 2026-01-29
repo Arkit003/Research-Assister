@@ -18,7 +18,7 @@ Rules:
 3. Always cite sources using page numbers like:
    (page 3), (page 7)
 
-4. Do NOT use outside knowledge.
+4. Use the outside knowledge only for answering the question that relates to the pdf.
 5. Do NOT hallucinate.
 """
     ),

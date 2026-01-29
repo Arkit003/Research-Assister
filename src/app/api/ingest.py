@@ -1,22 +1,17 @@
-from fastapi import FastAPI, BackgroundTasks, UploadFile, File, HTTPException
-from app.rag.loader import processed_pdf,extract_docs
+from fastapi import APIRouter, BackgroundTasks, UploadFile, File, HTTPException, Request
+from app.rag.ingest import ingest_pdf
 from pathlib import Path
-import uvicorn
-from app.logging import logger
 
-app = FastAPI()
-
-@app.get("/")
-def hello():
-    return "hi"
+router = APIRouter(prefix="/upload", tags=["ingest"])
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-@app.post("/upload/pdf")
+@router.post("/pdf")
 async def upload_pdf(
     file: UploadFile = File(...),
-    background_tasks: BackgroundTasks = None
+    background_tasks: BackgroundTasks = None,
+    request: Request = None,
 ):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files allowed")
@@ -27,18 +22,9 @@ async def upload_pdf(
         while chunk := await file.read(1024 * 1024):
             f.write(chunk)
 
-    background_tasks.add_task(processed_pdf, file_path)
-    docs = extract_docs(file_path)
+    background_tasks.add_task(ingest_pdf, file_path, request.app)
 
     return {
         "filename": file.filename,
-        "status": "processing",
-        # "docs_content": docs[1].page_content,
-        # "docs_metadata": docs[1].metadata,
-        # "no_of_pages": len(docs)
+        "status": "processing"
     }
-
-
-
-if __name__=="__main__":
-    uvicorn.run(app="app.api.ingest:app",reload=True)

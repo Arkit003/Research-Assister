@@ -10,3 +10,5 @@ python-multipart
 sentence_transformers
 langchain-huggingface
 langchain-core
+tiktoken
+faiss-cpu
