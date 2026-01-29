@@ -16,7 +16,6 @@ def run_rag_chain(llm, retriever, question: str):
             question=question
         )
 
-        #our custom llm returns a str rather than the reponse class through the groq key
         response = llm.invoke(messages)
         #our custom llm returns a str rather than the reponse class through the groq key
         if isinstance(response, str):
