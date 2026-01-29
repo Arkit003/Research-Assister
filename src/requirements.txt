@@ -7,3 +7,6 @@ langchain
 langchain-text-splitters
 langchain_community
 python-multipart
+sentence_transformers
+langchain-huggingface
+langchain-core

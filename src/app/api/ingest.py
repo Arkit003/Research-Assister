@@ -2,6 +2,7 @@ from fastapi import FastAPI, BackgroundTasks, UploadFile, File, HTTPException
 from app.rag.loader import processed_pdf,extract_docs
 from pathlib import Path
 import uvicorn
+from app.logging import logger
 
 app = FastAPI()
 

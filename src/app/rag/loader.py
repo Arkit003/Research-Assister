@@ -12,7 +12,7 @@ def extract_docs(path:Path)->str:
     
     return documents
 
-def process_pdf(path: Path):
+def processed_pdf(path: Path):
     loader = PyPDFLoader(str(path))
     pages = loader.load()  
 
