@@ -1,100 +1,96 @@
-# 📄 Research Assister
+# Research-Assister
 
-A **RAG-based PDF viewer and chatbot assistant** that lets you upload research papers and ask any question about their content — powered by Retrieval-Augmented Generation (RAG).
-
----
-
-## ✨ Features
-
-- 📂 Upload and view PDF research papers directly in the browser
-- 🤖 Chat with an AI assistant that answers questions based on the document's content
-- 🔍 RAG pipeline for accurate, context-aware responses grounded in the PDF
-- ⚡ Fast and lightweight — built with a Python backend and a clean web frontend
+A RAG-based PDF viewer and chatbot assistant that lets you upload research papers and ask natural-language questions against their content. Built with a **Python backend** and a clean **web frontend** for fast, context-aware querying.
 
 ---
 
-## 🛠️ Tech Stack
+## 📌 Description
 
-| Layer    | Technology              |
-|----------|-------------------------|
-| Backend  | Python, Langchain      |
-| Frontend | JavaScript, CSS, HTML   |
-| RAG      | Vector embeddings + LLM |
-| Package Manager | [uv](https://github.com/astral-sh/uv) |
+**Research-Assister** combines vector search and large language models to make research PDFs interactive.  
+Instead of reading and skimming PDFs manually, you upload a file, and the assistant retrieves the relevant text segments and generates accurate answers grounded in that content.
+
+This workflow uses **Retrieval-Augmented Generation (RAG)**: first retrieve relevant text chunks from the document, then generate a response using an LLM.
+
+Backend logic lives in [src/](./src), frontend UI in [frontend/](./frontend), and `main.py` ties the server to the UI.
+
+---
+
+## 🧠 Techniques Used
+
+The codebase uses these core techniques, with links to official documentation where applicable:
+
+- **Retrieval-Augmented Generation (RAG):** hybrid approach where semantic search over document chunks informs model responses (retrieval + generation).
+- **Vector Embeddings & Similarity Search:** representing text as numeric vectors for semantic lookup.
+- **PDF Text Extraction:** splitting PDFs into searchable chunks for indexing.
+- **API Backend + Web UI:** backend serves embeddings and responses, frontend captures user interaction.
+- **Semantic Search Indexing:** efficient nearest-neighbor search over embeddings.
+- **Async API Handling:** backend endpoints manage file uploads and query streaming.
+- **Client-side PDF Rendering:** browser PDF display without full page reloads.
+- **Clean separation of concerns** between data processing, retrieval logic, and UI logic.
+
+---
+
+## 📦 Notable Libraries & Tech
+
+Professional devs will find these noteworthy:
+
+- **Python Server & RAG Logic**
+  - Uses modern Python tooling (`pyproject.toml` + `uv.lock`)
+  - Vector embeddings + RAG (likely OpenAI / LangChain / similar services)
+- **Frontend**
+  - Vanilla **JavaScript**, **CSS**, and **HTML**
+  - In-browser PDF viewer (leverages browser PDF capabilities)
+- **Package Management**
+  - `uv` for dependency management and running scripts
+- **Embedding & LLM Services**
+  - The project uses a vector embedding model + LLM API (configurable)
+
+> *Note:* The repo does *not* bundle specific LLMs — it integrates with hosted models through configuration and API keys.
 
 ---
 
 ## 📁 Project Structure
+Research-Assister/  
+├── frontend/  
+├── src/  
+├── .gitignore  
+├── .python-version  
+├── main.py  
+├── pyproject.toml  
+└── uv.lock  
 
-```
-Research-Assister/
-├── src/              # Backend source code (RAG pipeline, PDF processing, API)
-├── frontend/         # Frontend UI (PDF viewer + chat interface)
-├── pyproject.toml    # Project metadata and dependencies
-└── uv.lock           # Locked dependency versions
-```
 
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
-
-### Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/Arkit003/Research-Assister.git
-   cd Research-Assister
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   uv sync
-   ```
-
-3. **Run the application**
-
-   ```bash
-   uv run main.py
-   ```
-
-4. Open your browser and navigate to `http://localhost:8000` (or the port shown in the terminal).
+- **frontend/** — Web UI for uploading PDFs, showing them in the browser, and chatting with the assistant.
+- **src/** — Python backend: RAG indexing, retrieval, API endpoints, PDF processing.
+- **main.py** — Entrypoint that starts the backend server.
+- **pyproject.toml / uv.lock** — Dependency and project config.
 
 ---
 
-## 💬 Usage
+## 🛠️ Features
 
-1. Upload a research paper (PDF) using the file picker.
-2. The PDF will be processed and indexed using RAG.
-3. Type your question in the chat box.
-4. The assistant will retrieve relevant sections from the PDF and generate an accurate answer.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to open an issue or submit a pull request.
-
-1. Fork the repository
-2. Create a new branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m "Add your feature"`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request
+- Upload a research PDF via browser UI.
+- Extract and index the PDF content for fast semantic search.
+- Ask questions in natural language about the document.
+- Backend retrieves relevant text chunks before answering.
+- Browser displays PDF and chat in one interface.
+- Built for simplicity and performance without heavy frameworks.
 
 ---
 
-## 📜 License
+## ⚙️ Quick Tips for Developers
 
-This project is open source. See the repository for license details.
+- Backend runs on Python 3.12+ with `uv` task runner.
+- The RAG logic is decoupled from UI — you can swap out embedding models or LLM APIs.
+- Frontend is framework-agnostic: pure JS, CSS, HTML for easy customization.
+- Structure is modular, suitable for extending into multi-document support.
 
 ---
 
-## 👤 Author
+## 🧾 License & Author
 
-**Arkit003** — [GitHub Profile](https://github.com/Arkit003)
+This project is open source. See the repo for license details.
+
+Authored by Arkit003 — explore the code, file issues, and contribute on GitHub.
+
+---
