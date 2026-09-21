@@ -2,13 +2,9 @@
 
 Chat with your research papers. Upload a PDF in the browser, and ask natural-language questions about it — a RAG pipeline chunks and embeds the document, retrieves the relevant passages from a FAISS index, and an LLM answers **grounded in those chunks with page citations**.
 
-```
-PDF upload ──▶ parse (PyPDF) ──▶ chunk (800 tokens) ──▶ embed (BGE) ──▶ FAISS index
-                                                                        │
-question ──────────────────────────────────▶ retrieve top-5 chunks ─────┤
-                                                                        ▼
-                                              context + prompt ──▶ LLM ──▶ cited answer
-```
+![Research-Assister RAG pipeline](docs/pipeline.svg)
+
+*To edit the diagram, open [`docs/pipeline.excalidraw`](docs/pipeline.excalidraw) — GitHub renders it in the file viewer, or drag the file onto [excalidraw.com](https://excalidraw.com).*
 
 ## What This Repo Contains
 
