@@ -1,96 +1,94 @@
 # Research-Assister
 
-A RAG-based PDF viewer and chatbot assistant that lets you upload research papers and ask natural-language questions against their content. Built with a **Python backend** and a clean **web frontend** for fast, context-aware querying.
+Chat with your research papers. Upload a PDF in the browser, and ask natural-language questions about it — a RAG pipeline chunks and embeds the document, retrieves the relevant passages from a FAISS index, and an LLM answers **grounded in those chunks with page citations**.
 
----
+```
+PDF upload ──▶ parse (PyPDF) ──▶ chunk (800 tokens) ──▶ embed (BGE) ──▶ FAISS index
+                                                                        │
+question ──────────────────────────────────▶ retrieve top-5 chunks ─────┤
+                                                                        ▼
+                                              context + prompt ──▶ LLM ──▶ cited answer
+```
 
-## 📌 Description
+## What This Repo Contains
 
-**Research-Assister** combines vector search and large language models to make research PDFs interactive.  
-Instead of reading and skimming PDFs manually, you upload a file, and the assistant retrieves the relevant text segments and generates accurate answers grounded in that content.
+| Path | Purpose |
+| --- | --- |
+| `src/app/api/` | FastAPI application: upload + chat endpoints, lifespan setup, request schemas |
+| `src/app/rag/` | The RAG pipeline: PDF loading, chunking, embeddings, FAISS vector store, prompt, chain |
+| `src/app/models/` | `CustomLLM` — OpenAI-compatible chat-completions client (LangChain `LLM` subclass) |
+| `src/app/exception/`, `src/app/logging/` | Custom exception wrapping and logging helpers |
+| `frontend/` | React 18 + Vite web UI: PDF viewer + chat panel |
+| `src/app/tests/rag_test.py` | Manual end-to-end test script (run it, don't pytest it) |
+| `src/README.md` | Detailed backend architecture write-up |
 
-This workflow uses **Retrieval-Augmented Generation (RAG)**: first retrieve relevant text chunks from the document, then generate a response using an LLM.
+## Backend (FastAPI)
 
-Backend logic lives in [src/](./src), frontend UI in [frontend/](./frontend), and `main.py` ties the server to the UI.
+Entry point is `src/app/api/main.py` — a FastAPI app whose **lifespan** loads the embedding model, the LLM client, and the persisted FAISS index into `app.state`. If no index exists yet, the app starts with `ready = False` and answers queries with `503` until a PDF is ingested.
 
----
+### Endpoints
 
-## 🧠 Techniques Used
+| Endpoint | Body | Behavior |
+| --- | --- | --- |
+| `POST /upload/pdf` | multipart form field `file` | Rejects non-PDFs (400). Saves the file to `uploads/`, then kicks off ingestion as a **background task** and returns `{"filename": ..., "status": "processing"}` immediately |
+| `POST /chat/query` | `{"query": "..."}` (3–500 chars) | Retrieves top-5 chunks, builds a page-cited context, invokes the LLM, returns `{"answer": "..."}`. Returns `503` until an index is ready |
+| `/docs` | — | Auto-generated OpenAPI docs |
 
-The codebase uses these core techniques, with links to official documentation where applicable:
+CORS is currently open to all origins (marked dev-only in the code).
 
-- **Retrieval-Augmented Generation (RAG):** hybrid approach where semantic search over document chunks informs model responses (retrieval + generation).
-- **Vector Embeddings & Similarity Search:** representing text as numeric vectors for semantic lookup.
-- **PDF Text Extraction:** splitting PDFs into searchable chunks for indexing.
-- **API Backend + Web UI:** backend serves embeddings and responses, frontend captures user interaction.
-- **Semantic Search Indexing:** efficient nearest-neighbor search over embeddings.
-- **Async API Handling:** backend endpoints manage file uploads and query streaming.
-- **Client-side PDF Rendering:** browser PDF display without full page reloads.
-- **Clean separation of concerns** between data processing, retrieval logic, and UI logic.
+### The RAG pipeline
 
----
+- **Chunking** (`rag/loader.py`): `PyPDFLoader` → `RecursiveCharacterTextSplitter.from_tiktoken_encoder` with `cl100k_base`, **800-token chunks / 150 overlap**, splitting on markdown headings and blank lines first.
+- **Embeddings** (`rag/embedding.py`): `BAAI/bge-small-en-v1.5` (sentence-transformers, normalized, CPU by default).
+- **Vector store** (`rag/vector_store.py`): FAISS, persisted at `vectorstore/bge_large/`. Retrieval prepends the BGE instruction prefix — `"Represent this sentence for searching relevant passages: "` — to the query.
+- **Prompt** (`rag/prompt.py`): a strict system prompt — answer **only** from the provided context, refuse otherwise ("I cannot answer this question based on the provided documents."), always cite page numbers like `(page 3)`, show step-by-step math reasoning. Context blocks are formatted `[Page N]`.
+- **LLM** (`models/cutsom_models.py`): a LangChain `LLM` subclass that POSTs to an **OpenAI-compatible chat-completions endpoint** (`requests`, `max_tokens=500`). Configured entirely via environment variables — no SDK lock-in.
 
-## 📦 Notable Libraries & Tech
+### Configuration
 
-Professional devs will find these noteworthy:
+Create `src/.env` (git-ignored) with:
 
-- **Python Server & RAG Logic**
-  - Uses modern Python tooling (`pyproject.toml` + `uv.lock`)
-  - Vector embeddings + RAG (likely OpenAI / LangChain / similar services)
-- **Frontend**
-  - Vanilla **JavaScript**, **CSS**, and **HTML**
-  - In-browser PDF viewer (leverages browser PDF capabilities)
-- **Package Management**
-  - `uv` for dependency management and running scripts
-- **Embedding & LLM Services**
-  - The project uses a vector embedding model + LLM API (configurable)
+```env
+API_KEY=your-key-here
+BASE_URL=https://your-openai-compatible-endpoint/v1/chat/completions
+```
 
-> *Note:* The repo does *not* bundle specific LLMs — it integrates with hosted models through configuration and API keys.
+The code was written against Groq's API, but any endpoint matching the chat-completions shape works. The default model string is `gpt-4.1-mini`.
 
----
+### Ingestion semantics
 
-## 📁 Project Structure
-Research-Assister/  
-├── frontend/  
-├── src/  
-├── .gitignore  
-├── .python-version  
-├── main.py  
-├── pyproject.toml  
-└── uv.lock  
+Each upload **replaces the index**: `rag/ingest.py` deletes the existing `vectorstore/bge_large/`, chunks + embeds the new PDF, builds a fresh FAISS index, and reloads it into `app.state` — so the assistant answers about the most recently uploaded document, not a merged corpus of all uploads.
 
+## Frontend (React + Vite)
 
-- **frontend/** — Web UI for uploading PDFs, showing them in the browser, and chatting with the assistant.
-- **src/** — Python backend: RAG indexing, retrieval, API endpoints, PDF processing.
-- **main.py** — Entrypoint that starts the backend server.
-- **pyproject.toml / uv.lock** — Dependency and project config.
+`frontend/` is a React 18 / Vite 5 app:
 
----
+- **PDF panel** (`components/PdfViewer.jsx`): `react-pdf`/pdf.js renders every page in a scrollable column — read the paper and its chat answers side by side
+- **Chat panel** (`components/ChatPanel.jsx`): message list, typing indicator, Enter-to-send
+- **API layer** (`src/api/*.js`): plain `fetch` calls, currently **hardcoded to `http://localhost:8000`** — change it there if you host the backend elsewhere
 
-## 🛠️ Features
+## Getting Started
 
-- Upload a research PDF via browser UI.
-- Extract and index the PDF content for fast semantic search.
-- Ask questions in natural language about the document.
-- Backend retrieves relevant text chunks before answering.
-- Browser displays PDF and chat in one interface.
-- Built for simplicity and performance without heavy frameworks.
+Requires **Python 3.11+** and Node.js.
 
----
+```bash
+# 1. Backend
+uv sync                                   # from the repo root
+cp src/.env .env 2>/dev/null || true      # create src/.env (see Configuration above)
+cd src
+../.venv/bin/uvicorn app.api.main:app --reload
 
-## ⚙️ Quick Tips for Developers
+# 2. Frontend (second terminal)
+cd frontend
+npm install
+npm run dev                               # http://localhost:5173
+```
 
-- Backend runs on Python 3.12+ with `uv` task runner.
-- The RAG logic is decoupled from UI — you can swap out embedding models or LLM APIs.
-- Frontend is framework-agnostic: pure JS, CSS, HTML for easy customization.
-- Structure is modular, suitable for extending into multi-document support.
+Upload a PDF on the left (e.g. the `attention.pdf` sample that lives in `src/uploads/`), wait for indexing, and start asking questions.
 
----
+## Notes
 
-## 🧾 License & Author
-
-This project is open source. See the repo for license details.
-
-Authored by Arkit003 — explore the code, file issues, and contribute on GitHub.
-
----
+- The root `main.py` is an **empty placeholder** — the backend entry point is `src/app/api/main.py` served by uvicorn
+- `streamlit` is listed in `pyproject.toml` but unused (leftover from an earlier prototype)
+- `src/app/tools/tools.py` is a stub: the TODO there plans to turn retrieval into an agent **tool** (e.g. a math tool + RAG-as-a-tool) instead of plain RAG
+- Vector indices (`src/vectorstore/`), uploads, logs, and `.env` are git-ignored
